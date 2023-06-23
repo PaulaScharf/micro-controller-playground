@@ -3,14 +3,14 @@ menu "WebServer Configuration"
 	menu "WiFi Setting"
 
 		config ESPCAM_WIFI_SSID
-			string "ReeduNet"
-			default "ReeduNet"
+			string "SSID"
+			default "SSID"
 			help
 				SSID (network name) to connect to.
 
 		config ESPCAM_WIFI_PASSWORD
-			string "werockschools!"
-			default "werockschools!"
+			string "password"
+			default "password"
 			help
 				WiFi password (WPA or WPA2) to connect to.
 
