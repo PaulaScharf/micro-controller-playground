@@ -5,6 +5,7 @@
 #include "driver/gpio.h"
 
 #include "esp_camera.h"
+#include "img_converters.h"
 #include "esp_http_server.h"
 #include "esp_timer.h"
 #include "camera_pins.h"
@@ -62,11 +63,11 @@ static esp_err_t init_camera(void)
         .ledc_timer = LEDC_TIMER_0,
         .ledc_channel = LEDC_CHANNEL_0,
 
-        .pixel_format = PIXFORMAT_JPEG,
-        .frame_size = FRAMESIZE_VGA,
+        .pixel_format = PIXFORMAT_RGB565, // YUV422,GRAYSCALE,RGB565,JPEG
+        .frame_size = FRAMESIZE_VGA,      // QQVGA-UXGA, For ESP32, do not use sizes above QVGA when not JPEG. The performance of the ESP32-S series has improved a lot, but JPEG mode always gives better frame rates.
 
-        .jpeg_quality = 10,
-        .fb_count = 1,
+        .jpeg_quality = 5,                    // 0-63, for OV series camera sensors, lower number means higher quality
+        .fb_count = 1,                        // When jpeg mode is used, if fb_count more than one, the driver will work in continuous mode.
         .grab_mode = CAMERA_GRAB_WHEN_EMPTY}; // CAMERA_GRAB_LATEST. Sets when buffers should be filled
     esp_err_t err = esp_camera_init(&camera_config);
     if (err != ESP_OK)
@@ -104,21 +105,21 @@ esp_err_t jpg_stream_httpd_handler(httpd_req_t *req)
             res = ESP_FAIL;
             break;
         }
-        // if (fb->format != PIXFORMAT_JPEG)
-        // {
-        //     bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
-        //     if (!jpeg_converted)
-        //     {
-        //         ESP_LOGE(TAG, "JPEG compression failed");
-        //         esp_camera_fb_return(fb);
-        //         res = ESP_FAIL;
-        //     }
-        // }
-        // else
-        // {
-        _jpg_buf_len = fb->len;
-        _jpg_buf = fb->buf;
-        // }
+        if (fb->format != PIXFORMAT_JPEG)
+        {
+            bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
+            if (!jpeg_converted)
+            {
+                ESP_LOGE(TAG, "JPEG compression failed");
+                esp_camera_fb_return(fb);
+                res = ESP_FAIL;
+            }
+        }
+        else
+        {
+            _jpg_buf_len = fb->len;
+            _jpg_buf = fb->buf;
+        }
 
         if (res == ESP_OK)
         {
