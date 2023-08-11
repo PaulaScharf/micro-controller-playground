@@ -120,7 +120,7 @@ static void rx_func (osjob_t* job) {
     os_setTimedCallback(&txjob, os_getTime() + ms2osticks(TX_INTERVAL/2), tx_func);
     Serial.println("Heard name. Sending sensor data...");
   } else {
-    Serial.println("Unknown signal");
+    // Serial.println("Unknown signal");
   }
 
   // Restart RX
