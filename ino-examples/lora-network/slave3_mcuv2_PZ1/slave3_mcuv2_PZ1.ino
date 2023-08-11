@@ -19,13 +19,7 @@
 #include <hal/hal.h>
 #include <SPI.h>
 
-#define I2C_PIN_SCL 40
-#define I2C_PIN_SDA 39
-
-bool readToF = true;
-bool readSoil = true;
-
-char* slave_name = "slave1";
+char* slave_name = "slave3";
 
 #include "Freenove_WS2812_Lib_for_ESP32.h"
 #define LED_PIN 1
@@ -139,11 +133,9 @@ static void tx_func (osjob_t* job) {
   delay(200);
   setLED(0,255,0); // green
 
-  int tof_values[3];
-  getToFValues(tof_values);
-  int ss_values[2];
-  getSoilSensorValues(ss_values);
-  String result = "t" + String(tof_values[0]) + "," + String(tof_values[1]) + "," + String(tof_values[2]) + ";s" + String(ss_values[0]) + "," +String(ss_values[1]);
+  float mpu6050_values[3];
+  getMPU6050Values(mpu6050_values);
+  String result = "m" + String(mpu6050_values[0]) + "," + String(mpu6050_values[1]) + "," + String(mpu6050_values[2]);
   Serial.println(result);
 
   tx(result.c_str(), txdone_func);
@@ -203,10 +195,8 @@ void setup() {
   // disable RX IQ inversion
   LMIC.noRXIQinversion = true;
 
-  setupToFImager();
-  Serial.println("ToF was successfully initialized");
-  setupAnalog();
-  Serial.println("Analog was successfully initialized");
+  setupMPU6050();
+  Serial.println("MPU6050 was successfully initialized");
 
   Serial.println("Setup complete. Waiting for signal...");
   Serial.flush();
