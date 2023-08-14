@@ -10,9 +10,9 @@
  * including, but not limited to, copying, modification and redistribution.
  * NO WARRANTY OF ANY KIND IS PROVIDED.
  *
- * This example transmits data on hardcoded channel and receives data
- * when not transmitting. Running this sketch on two nodes should allow
- * them to communicate.
+ * This script sends sensor data from the integrated MPU6050 via Lora.
+ * The data is only being send, if the device receives a Lora message with its name,
+ * which is "slave3".
  *******************************************************************************/
 
 #include <lmic.h>
