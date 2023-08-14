@@ -82,6 +82,7 @@ void getToFValues(int arr[3]) {
 Sensor Setup
 
 *************************/
+// plug into any of the two I2C interfaces
 void setupToFImager() {
   // I2C for Imager
   Wire.begin(I2C_PIN_SDA, I2C_PIN_SCL);
@@ -106,6 +107,7 @@ void setupToFImager() {
   measurementStartTime = millis();
 }
 
+// plug into GPIO-A
 void setupAnalog() {
   pinMode(IO_ENABLE,OUTPUT);
   digitalWrite(IO_ENABLE,LOW);

@@ -13,13 +13,14 @@
  * This script lets the host of the LoRa network transmit the IDs of the slaves in an
  * interval of 3 seconds. If a slave answers in the given time, the host will print its message.
  *******************************************************************************/
+#include <senseBoxIO.h>
 
 #include <lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
 
 const int slave_names_length = 3;
-char* slave_names[slave_names_length] = { "slave1", "slave2", "slave3" };
+const char* slave_names[slave_names_length] = { "slv1", "slv2", "slv3" };
 int current_slave = 0;
 
 #include <Adafruit_NeoPixel.h>
@@ -42,7 +43,7 @@ Adafruit_NeoPixel led= Adafruit_NeoPixel(1, 6,NEO_GRB + NEO_KHZ800);
 // this interval should not also be increased.
 // See this spreadsheet for an easy airtime and duty cycle calculator:
 // https://docs.google.com/spreadsheets/d/1voGAtQAjC1qBmaVuP1ApNKs1ekgUjavHuVQIXyYSvNc
-#define TX_INTERVAL 2000
+#define TX_INTERVAL 3000
 
 // Pin mapping
 const lmic_pinmap lmic_pins = {
@@ -114,8 +115,11 @@ static void rx_func (osjob_t* job) {
   // Serial.print("Got ");
   // Serial.print(LMIC.dataLen);
   // Serial.println(" bytes");
-  Serial.write(LMIC.frame, LMIC.dataLen);
-  Serial.println();
+  if(strncmp(slave_names[current_slave], (char*) LMIC.frame, strlen(slave_names[current_slave])) == 0) {
+    Serial.write(LMIC.frame, LMIC.dataLen);
+    Serial.println();
+    processMessageAndPrint((char*) LMIC.frame);
+  }
 
   // Restart RX
   rx(rx_func);
@@ -127,20 +131,20 @@ static void txdone_func (osjob_t* job) {
 
 // log text to USART and toggle LED
 static void tx_func (osjob_t* job) {
-
   // Blink once to confirm reception and then keep the led on
   setLED(255,255,0); // blue
   delay(200);
   setLED(0,255,0); // green
 
-  Serial.print("***** ");
-  Serial.println(slave_names[current_slave]);
-  tx(slave_names[current_slave], txdone_func);
   if(current_slave >= slave_names_length - 1) {
     current_slave = 0;
   } else {
     current_slave++;
   }
+
+  Serial.print("***** ");
+  Serial.println(slave_names[current_slave]);
+  tx(slave_names[current_slave], txdone_func);
 
   // reschedule job every TX_INTERVAL (plus a bit of random to prevent
   // systematic collisions), unless packets are received, then rx_func
@@ -152,6 +156,9 @@ static void tx_func (osjob_t* job) {
 void setup() {
   Serial.begin(115200);
   Serial.println("Starting");
+
+  senseBoxIO.powerXB1(true);
+
   led.begin();
   led.setBrightness(30);  
   setLED(0,255,0); // green

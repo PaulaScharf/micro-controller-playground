@@ -23,6 +23,7 @@ void getMPU6050Values(float arr[3]) {
 Sensor Setup
 
 *************************/
+// The sensor is already on the board
 void setupMPU6050() {
   Wire.begin(I2C_PIN_SDA, I2C_PIN_SCL);
   

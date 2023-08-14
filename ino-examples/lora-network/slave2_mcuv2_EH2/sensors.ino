@@ -62,10 +62,12 @@ void getToFValues(int arr[3]) {
 Sensor Setup
 
 *************************/
-void setupToFImager() {
+// plug into UART, but use the 5V interface to supply power via the VCC
+void setupToFRanger() {
   Serial1.begin(115200,SERIAL_8N1, RX, TX);
 }
 
+// plug into GPIO-A
 void setupAnalog() {
   pinMode(IO_ENABLE,OUTPUT);
   digitalWrite(IO_ENABLE,LOW);

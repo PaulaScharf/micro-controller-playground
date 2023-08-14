@@ -22,7 +22,7 @@
 #define I2C_PIN_SCL 40
 #define I2C_PIN_SDA 39
 
-char* slave_name = "slave2";
+char* slave_name = "slv2";
 
 #include "Freenove_WS2812_Lib_for_ESP32.h"
 #define LED_PIN 1
@@ -140,7 +140,7 @@ static void tx_func (osjob_t* job) {
   getToFValues(tof_values);
   int ss_values[2];
   getSoilSensorValues(ss_values);
-  String result = "t" + String(tof_values[0]) + "," + String(tof_values[1]) + "," + String(tof_values[2]) + ";s" + String(ss_values[0]) + "," +String(ss_values[1]);
+  String result = String(slave_name) + ":r" + String(tof_values[0]) + "," + String(tof_values[1]) + "," + String(tof_values[2]) + ";s" + String(ss_values[0]) + "," +String(ss_values[1]);
   Serial.println(result);
 
   tx(result.c_str(), txdone_func);
@@ -162,8 +162,7 @@ void setup() {
   // LMIC initialize runtime env
   pinMode(VCC_ENABLE, OUTPUT);
   digitalWrite(VCC_ENABLE, LOW);
-  delay(1000);
-
+  
   // initialize runtime env
   os_init();
 
@@ -200,8 +199,8 @@ void setup() {
   // disable RX IQ inversion
   LMIC.noRXIQinversion = true;
 
-  setupToFImager();
-  Serial.println("ToF was successfully initialized");
+  setupToFRanger();
+  Serial.println("ToF ranger was successfully initialized");
   setupAnalog();
   Serial.println("Analog was successfully initialized");
 
