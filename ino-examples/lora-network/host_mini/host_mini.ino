@@ -10,9 +10,8 @@
  * including, but not limited to, copying, modification and redistribution.
  * NO WARRANTY OF ANY KIND IS PROVIDED.
  *
- * This example transmits data on hardcoded channel and receives data
- * when not transmitting. Running this sketch on two nodes should allow
- * them to communicate.
+ * This script lets the host of the LoRa network transmit the IDs of the slaves in an
+ * interval of 3 seconds. If a slave answers in the given time, the host will print its message.
  *******************************************************************************/
 
 #include <lmic.h>
