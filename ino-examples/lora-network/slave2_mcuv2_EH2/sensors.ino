@@ -1,5 +1,6 @@
 int i;
 int dat[32]={0};
+unsigned long a;
 
 #define TEMP_IO 3
 #define HUMI_IO 2
@@ -25,35 +26,39 @@ void getSoilSensorValues(int arr[2]) {
   arr[1] = getSMT50Moisture(HUMI_IO);
 }
 void getToFValues(int arr[3]) {
-  arr[0] = -1; // status
-  arr[1] = -1; // strength
-  arr[2] = -1; // distance in mm
   if(Serial1.available()>=0)
   {
-    for(i=0;i<32;i++)
+    if(millis()-a>500)
     {
-      dat[i]=Serial1.read();
-    }
-    for(i=0;i<16;i++)
-    {
-      if(dat[i]==0x57&&dat[i+1]==0&&dat[i+2]==0xff&&dat[i+3]==0)
+      a=millis();
+      arr[0] = -1; // status
+      arr[1] = -1; // strength
+      arr[2] = -1; // distance in mm
+      for(i=0;i<32;i++)
       {
-        if(dat[i+12]+dat[i+13]*255==0)
+        dat[i]=Serial1.read();
+      }
+      for(i=0;i<16;i++)
+      {
+        if(dat[i]==0x57&&dat[i+1]==0&&dat[i+2]==0xff&&dat[i+3]==0)
         {
-          Serial.println("Out of range!");
-        }
-        else
-        { 
-          arr[0]=dat[i+11];
-          arr[1]=dat[i+12]+dat[i+13]*255;
-          arr[2]=dat[i+8]+dat[i+9]*255;
-        }
-          break; 
-      } 
-    }
+          if(dat[i+12]+dat[i+13]*255==0)
+          {
+            Serial.println("Out of range!");
+          }
+          else
+          { 
+            arr[0]=dat[i+11];
+            arr[1]=dat[i+12]+dat[i+13]*255;
+            arr[2]=dat[i+8]+dat[i+9]*255;
+          }
+            break; 
+        } 
+      }
+    } 
   } else {
-    Serial.print("Serial not available. Only received: ");
-    Serial.println(Serial1.available());
+      Serial.print("Serial not available. Only received: ");
+      Serial.println(Serial1.available());
   }
 }
 

@@ -33,19 +33,17 @@ void getSoilSensorValues(int arr[2]) {
   arr[1] = getSMT50Moisture(HUMI_IO);
 }
 void getToFValues(int arr[3]) {
-  arr[0] = -1; // max
-  arr[1] = -1; // min
-  arr[2] = -1; // no reading
   if (myImager.isDataReady() == true)
   {
-    // char result[64];
-    // strcpy(result,"");
-    arr[0] = 0;
-    arr[1] = 5000;
-    arr[2] = 0;
+    arr[0] = -1;
+    arr[1] = -1;
+    arr[2] = -1;
     // if(readSoil) result += "t";
     if (myImager.getRangingData(&measurementData)) // Read distance data into array
     {
+      arr[0] = 0;
+      arr[1] = 5000;
+      arr[2] = 0;
       // The ST library returns the data transposed from zone mapping shown in datasheet
       // Pretty-print data with increasing y, decreasing x to reflect reality
       for (int y = 0; y <= imageWidth * (imageWidth - 1); y += imageWidth)

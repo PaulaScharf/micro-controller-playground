@@ -19,7 +19,9 @@
 #include <hal/hal.h>
 #include <SPI.h>
 
-char* slave_name = "slave3";
+char* slave_name = "slv3";
+
+float mpu6050_values[3] = {-1, -1, -1};
 
 #include "Freenove_WS2812_Lib_for_ESP32.h"
 #define LED_PIN 1
@@ -133,9 +135,7 @@ static void tx_func (osjob_t* job) {
   delay(200);
   setLED(0,255,0); // green
 
-  float mpu6050_values[3];
-  getMPU6050Values(mpu6050_values);
-  String result = "m" + String(mpu6050_values[0]) + "," + String(mpu6050_values[1]) + "," + String(mpu6050_values[2]);
+  String result = String(slave_name) + ":m" + String(mpu6050_values[0]) + "," + String(mpu6050_values[1]) + "," + String(mpu6050_values[2]);
   Serial.println(result);
 
   tx(result.c_str(), txdone_func);
@@ -206,8 +206,10 @@ void setup() {
 }
 
 void loop() {
-  // execute scheduled jobs and events
+  // execute scheduled jobs and events for Lora
   os_runloop_once();
+  // update sensor data
+  getMPU6050Values(mpu6050_values);
 }
 
 

@@ -24,6 +24,9 @@
 
 char* slave_name = "slv2";
 
+int tof_values[3] = {-1, -1, -1};
+int ss_values[2] = {-1, -1};
+
 #include "Freenove_WS2812_Lib_for_ESP32.h"
 #define LED_PIN 1
 Freenove_ESP32_WS2812 led = Freenove_ESP32_WS2812(1, LED_PIN, 0, TYPE_GRB);
@@ -136,10 +139,6 @@ static void tx_func (osjob_t* job) {
   delay(200);
   setLED(0,255,0); // green
 
-  int tof_values[3];
-  getToFValues(tof_values);
-  int ss_values[2];
-  getSoilSensorValues(ss_values);
   String result = String(slave_name) + ":r" + String(tof_values[0]) + "," + String(tof_values[1]) + "," + String(tof_values[2]) + ";s" + String(ss_values[0]) + "," +String(ss_values[1]);
   Serial.println(result);
 
@@ -212,8 +211,10 @@ void setup() {
 }
 
 void loop() {
-  // execute scheduled jobs and events
+  // execute scheduled jobs and events for Lora
   os_runloop_once();
+  getToFValues(tof_values);
+  getSoilSensorValues(ss_values);
 }
 
 

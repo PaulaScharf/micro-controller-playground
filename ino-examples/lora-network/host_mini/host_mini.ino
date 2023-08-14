@@ -116,8 +116,6 @@ static void rx_func (osjob_t* job) {
   // Serial.print(LMIC.dataLen);
   // Serial.println(" bytes");
   if(strncmp(slave_names[current_slave], (char*) LMIC.frame, strlen(slave_names[current_slave])) == 0) {
-    Serial.write(LMIC.frame, LMIC.dataLen);
-    Serial.println();
     processMessageAndPrint((char*) LMIC.frame);
   }
 
