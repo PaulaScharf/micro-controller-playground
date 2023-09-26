@@ -66,8 +66,8 @@ void draw()
     if (valuesSplit.length > 1) {
     fill(255, 0, 100);
     noStroke();
-    float x =  (width / 2) + (cos(radians(float(valuesSplit[1]))) * float(valuesSplit[2])) * scale;
-    float y = (height / 2) - (sin(radians(float(valuesSplit[1]))) * float(valuesSplit[2])) * scale;
+    float x =  (width / 2) + (cos(radians(360.0-float(valuesSplit[1]))) * float(valuesSplit[2])) * scale;
+    float y = (height / 2) - (sin(radians(360.0-float(valuesSplit[1]))) * float(valuesSplit[2])) * scale;
     ellipse(x, y, 10, 10);
     }
   }
