@@ -146,7 +146,7 @@ static void camera_frame_cb(uvc_frame_t *frame, void *ptr)
         assert(0);
         break;
     }
-    if (counter == 10)
+    if (counter == 15)
     {
         char photo_name[50];
         sprintf(photo_name, "/sdcard/pic_%lli.jpg", (&s_fb)->timestamp.tv_sec);
@@ -281,8 +281,8 @@ void app_main(void)
     }
     ESP_LOGI(TAG, "Filesystem mounted");
 
-    host.max_freq_khz = 10000;
-    host.set_card_clk(host.slot, 10000);
+    host.max_freq_khz = 5000;
+    host.set_card_clk(host.slot, 5000);
 
     // Card has been initialized, print its properties
     sdmmc_card_print_info(stdout, card);
@@ -311,8 +311,8 @@ void app_main(void)
 
     uvc_config_t uvc_config = {
         /* match the any resolution of current camera (first frame size as default) */
-        .frame_width = DEMO_UVC_FRAME_WIDTH,
-        .frame_height = DEMO_UVC_FRAME_HEIGHT,
+        .frame_width = 320,
+        .frame_height = 240,
         .frame_interval = FPS2INTERVAL(5),
         .xfer_buffer_size = DEMO_UVC_XFER_BUFFER_SIZE,
         .xfer_buffer_a = xfer_buffer_a,
