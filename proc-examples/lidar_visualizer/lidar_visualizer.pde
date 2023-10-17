@@ -10,7 +10,7 @@ int rectHeight = 60;
 int rectWidth = 150;
 color rectColor, currentColor, clickedColor, hoverColor;
 
-float scale = 1;
+float scale = 0.3;
 
 int countdown = 5;
 int countdownStart;
@@ -27,11 +27,11 @@ String buff = "0,0,0,;"; // Create a serial buffer
 float prevAngle = 0;
 
 void setup() {
-  size(1000, 1000, FX2D);
+  size(1500, 1500, FX2D);
   rect1X=20;
   rect2X=20;
-  rect1Y=100;
-  rect2Y=200;
+  rect1Y=150;
+  rect2Y=300;
   rectColor= color(100);
   clickedColor = color(200);
   hoverColor = color(150);
@@ -46,7 +46,7 @@ void draw()
   // draw distance circles
   stroke(110, 110, 110);
   noFill();
-  for (int i = 200; i <= 3000; i += 200) {
+  for (int i = 200; i <= 4000; i += 200) {
     if (i % 1000 == 0) { // each 5m should be a bold stroke
       strokeWeight(4);
     } else {
@@ -64,11 +64,11 @@ void draw()
     String[] valuesSplit = new String[4];
     valuesSplit = (split(values[i], ','));
     if (valuesSplit.length > 1) {
-    fill(255, 0, 100);
-    noStroke();
-    float x =  (width / 2) + (cos(radians(360.0-float(valuesSplit[1]))) * float(valuesSplit[2])) * scale;
-    float y = (height / 2) - (sin(radians(360.0-float(valuesSplit[1]))) * float(valuesSplit[2])) * scale;
-    ellipse(x, y, 10, 10);
+      fill(255, 0, 100);
+      noStroke();
+      float x =  (width / 2) + (cos(radians(360.0-float(valuesSplit[1]))) * float(valuesSplit[2])) * scale;
+      float y = (height / 2) - (sin(radians(360.0-float(valuesSplit[1]))) * float(valuesSplit[2])) * scale;
+      ellipse(x, y, 10, 10);
     }
   }
 }
