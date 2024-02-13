@@ -24,6 +24,7 @@ int PredictManeuver(const float* prediction_scores) {
   float max_prediction_score = 0.0f;
   for (int i = 0; i < kManeuverCount; i++) {
     const float prediction_score = prediction_scores[i];
+    //Serial.println(prediction_score);
     if ((max_prediction_index == -1) ||
         (prediction_score > max_prediction_score)) {
       max_prediction_score = prediction_score;

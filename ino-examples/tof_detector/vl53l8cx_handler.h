@@ -17,6 +17,7 @@ limitations under the License.
 #define TENSORFLOW_LITE_MICRO_EXAMPLES_MAGIC_WAND_VL53L8CX_HANDLER_H_
 
 #define kChannelNumber 64
+#define kFrameNumber 20
 
 #include "tensorflow/lite/c/common.h"
 // #include "tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h"

@@ -23,24 +23,13 @@ limitations under the License.
 #include "tof_detector_model_data.h"
 #include "output_handler.h"
 #include "tensorflow/lite/micro/kernels/micro_ops.h"
-// #include "tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/schema/schema_generated.h"
-// #include "tensorflow/lite/version.h"
-
-// #include "Freenove_WS2812_Lib_for_ESP32.h"
-// #define LED_PIN 1
-// Freenove_ESP32_WS2812 led = Freenove_ESP32_WS2812(1, LED_PIN, 0, TYPE_GRB);
-// void setLED(uint8_t r,uint8_t g,uint8_t b) {
-//   led.setLedColorData(0, r, g, b);
-//   led.show();
-// }
 
 // Globals, used for compatibility with Arduino-style sketches.
 namespace {
-// tflite::ErrorReporter* error_reporter = nullptr;
 const tflite::Model* model = nullptr;
 tflite::MicroInterpreter* interpreter = nullptr;
 TfLiteTensor* model_input = nullptr;
@@ -56,11 +45,7 @@ uint8_t tensor_arena[kTensorArenaSize];
 // The name of this function is important for Arduino compatibility.
 void setup() {
   Serial.begin(115200);
-  while(!Serial);
-  // Set up logging. Google style is to avoid globals or statics because of
-  // lifetime uncertainty, but since this has a trivial destructor it's okay.
-  // static tflite::MicroErrorReporter micro_error_reporter;  // NOLINT
-  // error_reporter = &micro_error_reporter;
+  delay(2000);
 
   // Map the model into a usable data structure. This doesn't involve any
   // copying or parsing, it's a very lightweight operation.
@@ -72,43 +57,9 @@ void setup() {
     return;
   }
 
-  // Pull in only the operation implementations we need.
-  // This relies on a complete list of all the ops needed by this graph.
-  // An easier approach is to just use the AllOpsResolver, but this will
-  // incur some penalty in code space for op implementations that are not
-  // needed by this graph.
-
+  // This imports all operations, which is more intensive, than just importing the ones we need.
+  // If we ever run out of storage with a model, we can check here to free some space
   static tflite::AllOpsResolver resolver;
-  // static tflite::MicroMutableOpResolver<10> micro_mutable_op_resolver;  // NOLINT
-
-  // micro_mutable_op_resolver.AddDepthwiseConv2D();
-  // micro_mutable_op_resolver.AddFullyConnected();
-  // micro_mutable_op_resolver.AddConv2D();
-  // micro_mutable_op_resolver.AddMaxPool2D();
-  // micro_mutable_op_resolver.AddSoftmax();
-  // micro_mutable_op_resolver.AddMul();
-  // micro_mutable_op_resolver.AddAdd();
-  // micro_mutable_op_resolver.AddMean();
-  // micro_mutable_op_resolver.AddExpandDims();
-  // micro_mutable_op_resolver.AddBuiltin(
-  //     tflite::BuiltinOperator_DEPTHWISE_CONV_2D,
-  //     tflite::ops::micro::Register_DEPTHWISE_CONV_2D());
-  // micro_mutable_op_resolver.AddBuiltin(tflite::BuiltinOperator_MAX_POOL_2D,
-  //                              tflite::ops::micro::Register_MAX_POOL_2D());
-  // micro_mutable_op_resolver.AddBuiltin(tflite::BuiltinOperator_CONV_2D,
-  //                              tflite::ops::micro::Register_CONV_2D());
-  // micro_mutable_op_resolver.AddBuiltin(tflite::BuiltinOperator_FULLY_CONNECTED,
-  //                              tflite::ops::micro::Register_FULLY_CONNECTED());
-  // micro_mutable_op_resolver.AddBuiltin(tflite::BuiltinOperator_SOFTMAX,
-  //                              tflite::ops::micro::Register_SOFTMAX());
-  // micro_mutable_op_resolver.AddBuiltin(tflite::BuiltinOperator_MUL,
-  //                              tflite::ops::micro::Register_MUL());
-  // micro_mutable_op_resolver.AddBuiltin(tflite::BuiltinOperator_ADD,
-  //                              tflite::ops::micro::Register_ADD());
-  // micro_mutable_op_resolver.AddBuiltin(tflite::BuiltinOperator_MEAN,
-  //                              tflite::ops::micro::Register_MEAN());
-  
-
 
   // Build an interpreter to run the model with.
   static tflite::MicroInterpreter static_interpreter(
@@ -120,18 +71,10 @@ void setup() {
 
   // Obtain pointer to the model's input tensor.
   model_input = interpreter->input(0);
-  // Serial.println("Some model stats");
-  // Serial.println(model_input->dims->size); //3
-  // Serial.println(model_input->dims->data[0]); //1
-  // Serial.println(model_input->dims->data[1]); //20
-  // Serial.println(model_input->dims->data[2]); //64
-  // Serial.println(model_input->type); //1
-  // Serial.println(kTfLiteFloat32); //1
-  // Serial.println(kChannelNumber); //9
-  if ((model_input->dims->size != 3) || (model_input->dims->data[0] != 1) ||  // 3 1
-      (model_input->dims->data[1] != 20) ||                                  // 384
-      (model_input->dims->data[2] != kChannelNumber) ||                       // 9
-      (model_input->type != kTfLiteFloat32)) {                                // 1
+  if ((model_input->dims->size != 3) || (model_input->dims->data[0] != 1) ||
+      (model_input->dims->data[1] != kFrameNumber) ||
+      (model_input->dims->data[2] != kChannelNumber) || 
+      (model_input->type != kTfLiteFloat32)) {
     Serial.println(model_input->dims->size);
     Serial.println(model_input->dims->data[0]);
     Serial.println(model_input->dims->data[1]);
@@ -146,18 +89,26 @@ void setup() {
 
   bool setup_status = SetupVL53L8CX();
   if (!setup_status) {
-    Serial.println("Set up failed\n");
+    Serial.println("Setting up sensor failed\n");
   }
 }
 
 // TODO: should be true if x amount of pixels in the current frame are closer than 150cm. Then wait 5 frames or so
 bool IsSeeing() {
-  int time = millis()/1000;
-  if (time % 20 == 0) {
-    return true;
-  } else {
-    return false;
+  const float* input_data = model_input->data.f;
+  int fullFrames = 0;
+  for(int i=0; i<kFrameNumber; i++) {
+    int closePixels = 0;
+    for(int j = 0; j<kChannelNumber; j++) {
+      if(input_data[i*20+j]<1000.0) {
+        closePixels = closePixels+1;
+      }
+    }
+    if(closePixels>10) {
+      fullFrames = fullFrames + 1;
+    }
   }
+  return fullFrames > 3;
 }
 
 // This is the regular function we run to recognize Maneuvers from a pretrained
@@ -174,8 +125,9 @@ void RecognizeManeuvers() {
     }
 
     const float* prediction_scores = interpreter->output(0)->data.f;
+        const int found_gesture = PredictManeuver(prediction_scores);
 
-    Serial.println(*prediction_scores);
+    Serial.println(prediction_scores[0]);
   }
 }
 
@@ -189,4 +141,6 @@ void loop() {
   if (!got_data) return;
 
   RecognizeManeuvers();
+
+  //Serial.println(millis()-startTime);
 }
