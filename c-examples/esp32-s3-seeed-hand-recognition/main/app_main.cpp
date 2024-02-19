@@ -8,6 +8,9 @@
 #include "model_define.hpp"
 #include "esp_log.h"
 #include "esp_camera.h"
+#include "connect_wifi.hpp"
+#include "esp_http_server.h"
+#include "esp_timer.h"
 #define XCLK_FREQ_HZ 1000000
 
 #define CAMERA_MODULE_NAME "XIAO_ESP32S3"
@@ -32,6 +35,11 @@
 #define LED_GPIO_NUM      21
 
 static const char *TAG = "example:take_picture";
+
+#define PART_BOUNDARY "123456789000000000000987654321"
+static const char *_STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
+static const char *_STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
+static const char *_STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
 
 int input_height = 96;
 int input_width = 96;
@@ -867,6 +875,80 @@ void predict_model(Tensor<int16_t> input)
   printf("\n");
 }
 
+esp_err_t jpg_stream_httpd_handler(httpd_req_t *req)
+{
+  camera_fb_t *pic = NULL;
+  esp_err_t res = ESP_OK;
+  size_t _jpg_buf_len;
+  uint8_t *_jpg_buf;
+  char *part_buf[64];
+  static int64_t last_frame = 0;
+  if (!last_frame)
+  {
+    last_frame = esp_timer_get_time();
+  }
+
+  res = httpd_resp_set_type(req, _STREAM_CONTENT_TYPE);
+  if (res != ESP_OK)
+  {
+    return res;
+  }
+  while (true)
+  {
+    ESP_LOGI(TAG, "Taking picture...");
+    pic = esp_camera_fb_get();
+
+    // use pic->buf to access the image
+    ESP_LOGI(TAG, "Picture taken! Its size was: %zu bytes", pic->len);
+    Tensor<int16_t> input;
+    input.set_element((int16_t *)pic->buf).set_exponent(input_exponent).set_shape({(int16_t)pic->height, (int16_t)pic->width, input_channel}).set_auto_free(false);
+
+    input.print_all();
+    predict_model(input);
+    if (pic->format != PIXFORMAT_JPEG)
+    {
+        bool jpeg_converted = frame2jpg(pic, 80, &_jpg_buf, &_jpg_buf_len);
+        if (!jpeg_converted)
+        {
+            ESP_LOGE(TAG, "JPEG compression failed");
+            esp_camera_fb_return(pic);
+            res = ESP_FAIL;
+        }
+    }
+    else
+    {
+        _jpg_buf_len = pic->len;
+        _jpg_buf = pic->buf;
+    }
+
+    if (res == ESP_OK)
+    {
+        res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
+    }
+    if (res == ESP_OK)
+    {
+        size_t hlen = snprintf((char *)part_buf, 64, _STREAM_PART, _jpg_buf_len);
+
+        res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
+    }
+    if (res == ESP_OK)
+    {
+        res = httpd_resp_send_chunk(req, (const char *)_jpg_buf, _jpg_buf_len);
+    }
+    if (pic->format != PIXFORMAT_JPEG)
+    {
+        free(_jpg_buf);
+    }
+    esp_camera_fb_return(pic);
+    if (res != ESP_OK)
+    {
+        break;
+    }
+    vTaskDelay(5000 / 10);
+  }
+  return res;
+}
+
 static esp_err_t init_camera(void)
 {
     camera_config_t config;
@@ -907,25 +989,57 @@ static esp_err_t init_camera(void)
     return ESP_OK;
 }
 
+httpd_uri_t uri_get = {
+    .uri = "/",
+    .method = HTTP_GET,
+    .handler = jpg_stream_httpd_handler,
+    .user_ctx = NULL};
+httpd_handle_t setup_server(void)
+{
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    httpd_handle_t stream_httpd = NULL;
+
+    if (httpd_start(&stream_httpd, &config) == ESP_OK)
+    {
+      httpd_register_uri_handler(stream_httpd, &uri_get);
+    }
+
+    return stream_httpd;
+}
+
 extern "C" void app_main(void)
 {
+  // Initialize NVS
+  esp_err_t ret = nvs_flash_init();
+  if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
+  {
+      ESP_ERROR_CHECK(nvs_flash_erase());
+      ret = nvs_flash_init();
+  }
+  connect_wifi();
+  if (!wifi_connect_status)
+  {
+    ESP_LOGI(TAG, "Failed to connected with Wi-Fi, check your network Credentials\n");
+    return;
+  }
+  
+  httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+  httpd_handle_t stream_httpd = NULL;
+  if (httpd_start(&stream_httpd, &config) != ESP_OK)
+  {
+    ESP_LOGI(TAG, "Failed to setup server\n");
+    return;
+  }
+  httpd_register_uri_handler(stream_httpd , &uri_get);
+
+  ESP_LOGI(TAG, "Wi-Fi and server ok. Init camera...");
   if(ESP_OK != init_camera()) {
-        return;
-    }
+    return;
+  }
+  ESP_LOGI(TAG, "Camera ok. Lets go");
 
-    while (1)
-    {
-      ESP_LOGI(TAG, "Taking picture...");
-      camera_fb_t *pic = esp_camera_fb_get();
-
-      // use pic->buf to access the image
-      ESP_LOGI(TAG, "Picture taken! Its size was: %zu bytes", pic->len);
-      esp_camera_fb_return(pic);
-      Tensor<int16_t> input;
-      input.set_element((int16_t *)example_element).set_exponent(input_exponent).set_shape({(int16_t)pic->height, (int16_t)pic->width, input_channel}).set_auto_free(false);
-
-      input.print_all();
-      predict_model(input);
-      vTaskDelay(5000 / 10);
-    }
+  // first couple of pictures are always trash. I think cam needs warmup
+  // esp_camera_fb_get();
+  // vTaskDelay(5000 / 10);
+  // esp_camera_fb_get();
 }
